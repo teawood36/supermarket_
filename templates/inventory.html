@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>库存管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
+</head>
+<body>
+<nav class="container-fluid">
+  <ul><li><strong>库存管理系统</strong></li></ul>
+  <ul>
+    <li><a href="/">主页</a></li>
+    <li><a href="#add">入库</a></li>
+    <li><a href="#search">搜索</a></li>
+  </ul>
+</nav>
+
+<main class="container">
+  <h2>商品库存列表</h2>
+  <form action="/search" method="get" id="search">
+    <input type="text" name="keyword" placeholder="按商品名称搜索..." />
+    <select name="category">
+      <option value="">全部分类</option>
+      <option>食品</option>
+      <option>日用品</option>
+      <option>工具</option>
+      <option>其他类</option>
+    </select>
+    <button type="submit">搜索</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>商品名</th>
+        <th>数量</th>
+        <th>分类</th>
+        <th>仓库</th>
+        <th>库位</th>
+        <th>盘点调整</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td>{{ product['name'] }}</td>
+        <td>{{ product['quantity'] }}</td>
+        <td>{{ product['category'] }}</td>
+        <td>{{ product['warehouse'] }}</td>
+        <td>{{ product['location'] }}</td>
+        <td>
+          <form action="/adjust" method="post" style="display: flex; gap: 0.5rem;">
+            <input type="hidden" name="product_id" value="{{ product['id'] }}">
+            <input type="number" name="new_quantity" min="0" placeholder="新数量">
+            <button type="submit">更新</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <hr />
+  <h3 id="add">入库操作</h3>
+  <form action="/add" method="post" class="grid">
+    <input type="text" name="name" placeholder="商品名称" required />
+    <input type="number" name="quantity" placeholder="数量" required />
+    <select name="category" required>
+      <option>食品</option>
+      <option>日用品</option>
+      <option>工具</option>
+      <option>其他类</option>
+    </select>
+    <input type="text" name="location" placeholder="库位（例如 A区-3排）" required />
+    <button type="submit">入库</button>
+  </form>
+
+  <hr />
+  <h3>出库操作</h3>
+  <form action="/remove" method="post" class="grid">
+    <input type="text" name="name" placeholder="商品名称" required />
+    <input type="number" name="quantity" placeholder="出库数量" required />
+    <button type="submit">出库</button>
+  </form>
+</main>
+
+<footer class="container">
+  <small><a href="#">Admin Only</a> • <a href="#">版权所有 &copy; 2025</a></small>
+</footer>
+</body>
+</html>
