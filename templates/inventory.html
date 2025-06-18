@@ -6,12 +6,28 @@
   <title>库存管理系统</title>
   <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
 </head>
+<script>
+function enableEdit(id) {
+  const row = document.getElementById('row-' + id);
+  const spans = row.querySelectorAll('.readonly');
+  const inputs = row.querySelectorAll('.editable');
+
+  spans.forEach(s => s.classList.add('hidden'));
+  inputs.forEach(i => i.classList.remove('hidden'));
+}
+</script>
+<style>
+.hidden {
+  display: none;
+}
+</style>
+
 <body>
 <nav class="container-fluid">
   <ul><li><strong>库存管理系统</strong></li></ul>
   <ul>
     <li><a href="/">主页</a></li>
-    <li><a href="#add">入库</a></li>
+    <li><a href="/records">记录</a></li>
     <li><a href="#search">搜索</a></li>
   </ul>
 </nav>
@@ -36,29 +52,59 @@
         <th>商品名</th>
         <th>数量</th>
         <th>分类</th>
-        <th>仓库</th>
         <th>库位</th>
         <th>盘点调整</th>
       </tr>
     </thead>
     <tbody>
-      {% for product in products %}
-      <tr>
-        <td>{{ product['name'] }}</td>
-        <td>{{ product['quantity'] }}</td>
-        <td>{{ product['category'] }}</td>
-        <td>{{ product['warehouse'] }}</td>
-        <td>{{ product['location'] }}</td>
-        <td>
-          <form action="/adjust" method="post" style="display: flex; gap: 0.5rem;">
-            <input type="hidden" name="product_id" value="{{ product['id'] }}">
-            <input type="number" name="new_quantity" min="0" placeholder="新数量">
-            <button type="submit">更新</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
+  {% for product in products %}
+  <tr id="row-{{ product['id'] }}">
+    <form action="/adjust" method="post">
+      <input type="hidden" name="product_id" value="{{ product['id'] }}">
+
+      <!-- 商品名称 -->
+      <td>
+        <span class="readonly">{{ product['name'] }}</span>
+        <input type="text" name="name" value="{{ product['name'] }}" class="editable hidden" />
+      </td>
+
+      <!-- 数量 -->
+      <td>
+        <span class="readonly">{{ product['quantity'] }}</span>
+        <input type="number" name="quantity" value="{{ product['quantity'] }}" class="editable hidden" />
+      </td>
+
+      <!-- 分类 -->
+      <td>
+        <span class="readonly">{{ product['category'] }}</span>
+        <select name="category" class="editable hidden">
+          <option {% if product['category'] == '食品' %}selected{% endif %}>食品</option>
+          <option {% if product['category'] == '日用品' %}selected{% endif %}>日用品</option>
+          <option {% if product['category'] == '工具' %}selected{% endif %}>工具</option>
+          <option {% if product['category'] == '其他类' %}selected{% endif %}>其他类</option>
+        </select>
+      </td>
+
+      <!-- 库位 -->
+      <td>
+        <span class="readonly">{{ product['location'] }}</span>
+        <input type="text" name="location" value="{{ product['location'] }}" class="editable hidden" />
+      </td>
+
+      <!-- 操作列 -->
+      <td>
+        <button type="button" onclick="enableEdit({{ product['id'] }})">更新</button>
+        <button type="submit" class="editable hidden">确认</button>
+    </form>
+    <form action="/delete" method="post" style="display:inline;">
+      <input type="hidden" name="product_id" value="{{ product['id'] }}">
+      <button type="submit" class="editable hidden" onclick="return confirm('确定要删除该商品吗？')">删除</button>
+    </form>
+      </td>
+  </tr>
+  {% endfor %}
+</tbody>
+
   </table>
 
   <hr />
@@ -85,8 +131,8 @@
   </form>
 </main>
 
-<footer class="container">
-  <small><a href="#">Admin Only</a> • <a href="#">版权所有 &copy; 2025</a></small>
-</footer>
+<!--<footer class="container">-->
+<!--  <small><a href="#">Admin Only</a> • <a href="#">版权所有 &copy; 2025</a></small>-->
+<!--</footer>-->
 </body>
 </html>

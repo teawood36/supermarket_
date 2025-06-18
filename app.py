@@ -49,9 +49,17 @@ def add_product():
             'INSERT INTO products (name, quantity, category, warehouse, location) VALUES (?, ?, ?, ?, ?)',
             (name, quantity, category, warehouse, location)
         )
+
+    # 插入记录日志
+    conn.execute(
+        'INSERT INTO records (name, type, quantity, category, warehouse, location) VALUES (?, ?, ?, ?, ?, ?)',
+        (name, '入库', quantity, category, warehouse, location)
+    )
+
     conn.commit()
     conn.close()
     return redirect(url_for('inventory'))
+
 
 @app.route('/remove', methods=['POST'])
 def remove_product():
@@ -60,11 +68,26 @@ def remove_product():
 
     conn = get_db_connection()
     product = conn.execute('SELECT * FROM products WHERE name = ?', (name,)).fetchone()
-    if product and product['quantity'] >= quantity:
-        conn.execute('UPDATE products SET quantity = quantity - ? WHERE id = ?', (quantity, product['id']))
-    conn.commit()
+
+    if product:
+        current_qty = product['quantity']
+        if current_qty >= quantity:
+            new_qty = current_qty - quantity
+            if new_qty == 0:
+                conn.execute('DELETE FROM products WHERE id = ?', (product['id'],))
+            else:
+                conn.execute('UPDATE products SET quantity = ? WHERE id = ?', (new_qty, product['id']))
+
+            # 插入记录日志
+            conn.execute(
+                'INSERT INTO records (name, type, quantity, category, warehouse, location) VALUES (?, ?, ?, ?, ?, ?)',
+                (product['name'], '出库', quantity, product['category'], product['warehouse'], product['location'])
+            )
+            conn.commit()
     conn.close()
     return redirect(url_for('inventory'))
+
+
 
 @app.route('/search', methods=['GET'])
 def search():
@@ -91,15 +114,53 @@ def search():
     return render_template('inventory.html', products=products)
 
 @app.route('/adjust', methods=['POST'])
-def adjust_quantity():
+def adjust_product():
     product_id = request.form['product_id']
-    new_quantity = int(request.form['new_quantity'])
+    name = request.form['name']
+    quantity = int(request.form['quantity'])
+    category = request.form['category']
+    location = request.form['location']
+    warehouse = CATEGORIES.get(category, '四仓库')
 
     conn = get_db_connection()
-    conn.execute('UPDATE products SET quantity = ? WHERE id = ?', (new_quantity, product_id))
+
+    # 获取旧数据（可选扩展：记录变更对比）
+    old = conn.execute('SELECT * FROM products WHERE id = ?', (product_id,)).fetchone()
+
+    # 执行更新
+    conn.execute(
+        'UPDATE products SET name = ?, quantity = ?, category = ?, warehouse = ?, location = ? WHERE id = ?',
+        (name, quantity, category, warehouse, location, product_id)
+    )
+
+    # ✅ 插入更新记录（记录为“更新”类型）
+    conn.execute(
+        'INSERT INTO records (name, type, quantity, category, warehouse, location) VALUES (?, ?, ?, ?, ?, ?)',
+        (name, '更新', quantity, category, warehouse, location)
+    )
+
     conn.commit()
     conn.close()
     return redirect(url_for('inventory'))
+
+
+
+@app.route('/records')
+def view_records():
+    conn = get_db_connection()
+    logs = conn.execute('SELECT * FROM records ORDER BY timestamp DESC').fetchall()
+    conn.close()
+    return render_template('records.html', logs=logs)
+
+@app.route('/delete', methods=['POST'])
+def delete_product():
+    product_id = request.form['product_id']
+    conn = get_db_connection()
+    conn.execute('DELETE FROM products WHERE id = ?', (product_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('inventory'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
