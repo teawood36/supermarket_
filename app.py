@@ -1,6 +1,8 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for
+
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
+import os
 
 app = Flask(__name__)
 
@@ -11,8 +13,13 @@ CATEGORIES = {
     '其他类': '四仓库'
 }
 
-import os
+
 DATABASE = os.getenv('DATABASE', 'inventory.db')
+app.secret_key = '123456'
+
+ADMIN_USERNAME = 'admin'
+ADMIN_PASSWORD = '123456'
+
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
@@ -24,8 +31,29 @@ def get_db_connection():
 def index():
     return redirect(url_for('inventory'))
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            return redirect(url_for('inventory'))
+        else:
+            flash('登录失败，账号或密码错误。')
+            return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+
 @app.route('/inventory')
 def inventory():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     conn = get_db_connection()
     products = conn.execute('SELECT * FROM products').fetchall()
     conn.close()
