@@ -156,16 +156,13 @@ def adjust_product():
 
     conn = get_db_connection()
 
-    # 获取旧数据（可选扩展：记录变更对比）
     old = conn.execute('SELECT * FROM products WHERE id = ?', (product_id,)).fetchone()
 
-    # 执行更新
     conn.execute(
         'UPDATE products SET name = ?, quantity = ?, category = ?, warehouse = ?, location = ? WHERE id = ?',
         (name, quantity, category, warehouse, location, product_id)
     )
 
-    # ✅ 插入更新记录（记录为“更新”类型）
     conn.execute(
         'INSERT INTO records (name, type, quantity, category, warehouse, location) VALUES (?, ?, ?, ?, ?, ?)',
         (name, '更新', quantity, category, warehouse, location)
