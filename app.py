@@ -11,10 +11,14 @@ CATEGORIES = {
     '其他类': '四仓库'
 }
 
+import os
+DATABASE = os.getenv('DATABASE', 'inventory.db')
+
 def get_db_connection():
-    conn = sqlite3.connect('inventory.db')
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 @app.route('/')
 def index():
